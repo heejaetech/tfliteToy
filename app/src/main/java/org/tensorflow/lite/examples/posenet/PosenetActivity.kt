@@ -564,7 +564,7 @@ class PosenetActivity :
 
     paint2.color = Color.GREEN
     paint2.textSize = 120.0f
-    paint2.strokeWidth = 12.0f
+    paint2.strokeWidth = 10.0f
   }
 
   /** Draw bitmap on Canvas.   */
@@ -688,7 +688,7 @@ class PosenetActivity :
         val countResult = analExercise().workCount(
           squartLHIPy,
           squartLKNEEy,
-          squartLHIPy,
+          squartRHIPy,
           squartRKNEEy,
           aLegLANG,
           aLegRANG,
@@ -862,15 +862,16 @@ class PosenetActivity :
       Log.d("herere", squartLHIPy.toString()+"/"+squartLKNEEy.toString()+" "+squart_FLAG.toString())
 
       if (squartLHIPy != 0.0f && squartLKNEEy != 0.0f) {
-        val result = squartLHIPy - squartLKNEEy
-        if ((result > -15 && (aLegLANG <= 110 || aLegRANG <= 110)) && squart_FLAG == 0) { // 스쿼트
-//        if ((result > -15) && squart_FLAG == 0) { // 스쿼트
-          Log.d("cal", result.toString())
+        val diffL = squartLHIPy - squartLKNEEy
+        val diffR = squartRHIPy - squartRKNEEy
+        if ((diffL > -40 || diffR > -40) && (aLegLANG <= 110 || aLegRANG <= 110) && squart_FLAG == 0) { // 스쿼트
+//        if ((result > -20) && squart_FLAG == 0) { // 스쿼트
+          Log.d("cal", diffL.toString())
           changingFLAG = 1
           Log.d("result", "yes!");
           return changingFLAG
-        } else if ((result < -15 && (aLegLANG > 145 && aLegRANG > 145)) && squart_FLAG == 1) {  // 일어나면 카운트
-//        } else if ((result < -15) && squart_FLAG == 1) {  // 일어나면 카운트
+        } else if ((diffL < -40 && diffR < -40) && (aLegLANG > 135 && aLegRANG > 135) && squart_FLAG == 1) {  // 일어나면 카운트
+//        } else if ((result < -20) && squart_FLAG == 1) {  // 일어나면 카운트
           changingFLAG = 0
           Log.d("result2", squart_FLAG.toString()+" you did it");
           return changingFLAG
