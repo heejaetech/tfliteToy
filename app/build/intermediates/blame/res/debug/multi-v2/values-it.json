@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "C:\\Users\\HJ\\Documents\\dev\\1Project\\Tensorflow Lite\\examples-master\\examples-master\\lite\\examples\\posenet\\android\\app\\build\\intermediates\\incremental\\mergeDebugResources\\merged.dir\\values-it\\values-it.xml",
+            "outputFile": "C:\\Users\\HJ\\Documents\\dev\\1Project\\Tensorflow Lite\\tfliteToy\\app\\build\\intermediates\\incremental\\mergeDebugResources\\merged.dir\\values-it\\values-it.xml",
             "map": [
                 {
                     "source": "C:\\Users\\HJ\\.gradle\\caches\\transforms-2\\files-2.1\\60e47a50e145b6f7903a866ec8b94b4a\\res\\values-it\\values-it.xml",

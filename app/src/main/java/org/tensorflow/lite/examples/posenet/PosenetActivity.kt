@@ -602,6 +602,7 @@ class PosenetActivity :
     val widthRatio = screenWidth.toFloat() / MODEL_WIDTH
     val heightRatio = screenHeight.toFloat() / MODEL_HEIGHT
 
+    // squartclass 만들기
     var squartLHIPx: Float = 0.0f
     var squartLHIPy: Float = 0.0f
     var squartRHIPx: Float = 0.0f
