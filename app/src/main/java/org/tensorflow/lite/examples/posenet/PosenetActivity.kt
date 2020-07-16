@@ -67,6 +67,7 @@ import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import org.tensorflow.lite.examples.posenet.lib.BodyPart  // posenet 라이브러리의 클래스 사용
+import org.tensorflow.lite.examples.posenet.lib.KeyPoint
 import org.tensorflow.lite.examples.posenet.lib.Person
 import org.tensorflow.lite.examples.posenet.lib.Posenet
 import kotlin.math.acos
@@ -76,7 +77,10 @@ import kotlin.math.atan2
 class PosenetActivity :
   Fragment(),
   ActivityCompat.OnRequestPermissionsResultCallback {
-
+//  /** count 변수 */
+//  var count: Int = 0
+//  /** count Flag */
+//  var countFlag: Int = 0
   /** 스쿼트 Count */
   var squartCnt: Int = 0
   /** 스쿼트 Flag */
@@ -602,127 +606,29 @@ class PosenetActivity :
     val widthRatio = screenWidth.toFloat() / MODEL_WIDTH
     val heightRatio = screenHeight.toFloat() / MODEL_HEIGHT
 
-    // squartclass 만들기
-    var squartLHIPx: Float = 0.0f
-    var squartLHIPy: Float = 0.0f
-    var squartRHIPx: Float = 0.0f
-    var squartRHIPy: Float = 0.0f
-    var squartLKNEEx: Float = 0.0f
-    var squartLKNEEy: Float = 0.0f
-    var squartRKNEEx: Float = 0.0f
-    var squartRKNEEy: Float = 0.0f
-    var squartLANKx: Float = 0.0f
-    var squartLANKy: Float = 0.0f
-    var squartRANKx: Float = 0.0f
-    var squartRANKy: Float = 0.0f
+    val squartCntObj = SquartObj(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f)
     // Draw key points over the image.
     for (keyPoint in person.keyPoints) {
       if (keyPoint.score > minConfidence) {
         val position = keyPoint.position
         val adjustedX: Float = position.x.toFloat() * widthRatio + left
         val adjustedY: Float = position.y.toFloat() * heightRatio + top
-        Log.d(
-          "partXXX",
-          position.x.toString() + ", " + adjustedY.toString() + " / " + keyPoint.bodyPart.toString()
-        )
-
-        when (keyPoint.bodyPart) {
-          BodyPart.LEFT_HIP -> {
-            squartLHIPx = adjustedX
-            squartLHIPy = adjustedY
-          }
-          BodyPart.RIGHT_HIP -> {
-            squartRHIPx = adjustedX
-            squartRHIPy = adjustedY
-          }
-          BodyPart.LEFT_KNEE -> {
-            squartLKNEEx = adjustedX
-            squartLKNEEy = adjustedY
-          }
-          BodyPart.RIGHT_KNEE -> {
-            squartRKNEEx = adjustedX
-            squartRKNEEy = adjustedY
-          }
-          BodyPart.LEFT_ANKLE -> {
-            squartLANKx = adjustedX
-            squartLANKy = adjustedY
-          }
-          BodyPart.RIGHT_ANKLE -> {
-            squartRANKx = adjustedX
-            squartRANKy = adjustedY
-          }
-        }
-//        if (keyPoint.bodyPart == BodyPart.LEFT_HIP) {
-//          squartLHIP = adjustedY
-//        }
-//        if (keyPoint.bodyPart == BodyPart.LEFT_KNEE) {
-//          squartLKNEE = adjustedY
-//        }
+//        Log.d("partXXX", position.x.toString() + ", " + adjustedY.toString() + " / " + keyPoint.bodyPart.toString())
+        squartCntObj.setAdjustedparts(keyPoint, adjustedX, adjustedY) // 좌표 세팅 for 스쿼트
         canvas.drawCircle(adjustedX, adjustedY, circleRadius, paint)
       }
 
-      Log.d("partX", squartLHIPy.toString() + " / " + squartLHIPy.toString())
-      var legLANG: Double = 0.0
-      var legRANG: Double = 0.0
-      var absLegVal: Double
-
-      if ((squartLHIPx * squartLHIPy * squartLKNEEx * squartLKNEEy * squartLANKx * squartLANKy) > 0){
-        legLANG = analExercise().calAngle(squartLHIPx, squartLHIPy, squartLKNEEx, squartLKNEEy, squartLANKx, squartLANKy)
+      // 스쿼트
+//      count = AnalExercise().squartCnt
+//      countFlag = AnalExercise().squart_FLAG
+      val cnt = AnalExercise().squartCount(squartCntObj, squart_FLAG)
+      if (cnt == 1){
+        squart_FLAG = 1
+      } else if (cnt == 0){
+        squartCnt++
+        squart_FLAG = 0
       }
-      if ((squartRHIPx * squartRHIPy * squartRKNEEx * squartRKNEEy * squartRANKx * squartRANKy) > 0){
-        legRANG = analExercise().calAngle(squartRHIPx, squartRHIPy, squartRKNEEx, squartRKNEEy, squartRANKx, squartRANKy)
-      }
-      Log.d("posparts", (squartLHIPx * squartLHIPy * squartLKNEEx * squartLKNEEy * squartLANKx * squartLANKy).toString()+ "   "+ legLANG.toString() + " ,, " + legRANG.toString())
-//      val legRANG = analExercise().calAngle(squartRHIPx, squartRHIPy, squartRKNEEx, squartRKNEEy, squartRANKx, squartRANKy)
-
-      absLegVal = Math.abs(legLANG)
-      val aLegLANG = if (absLegVal>180) 360 - absLegVal else absLegVal
-      absLegVal = Math.abs(legRANG)
-      val aLegRANG = if (absLegVal>180) 360 - absLegVal else absLegVal
-//      Log.d("pospartsNew", (squartLHIPx * squartLHIPy * squartLKNEEx * squartLKNEEy * squartLANKx * squartLANKy).toString()+ "   "+ aLegLANG.toString() + " ,, " + aLegRANG.toString())
-
-      if (aLegLANG > 0 && aLegRANG > 0){
-        Log.d("angles",  squartLHIPx.toString() +" "+squartLHIPy.toString() +" , " + squartLANKx + " "+squartLANKy +" /ang "+ aLegLANG.toString() + " // "
-                + squartRHIPx + " " + squartRHIPy + " , " + squartRANKx + " " + squartRANKy + " /ang " + aLegRANG.toString())
-        Log.d("pospartsNew", (squartLHIPx * squartLHIPy * squartLKNEEx * squartLKNEEy * squartLANKx * squartLANKy).toString()+ "   "+ aLegLANG.toString() + " ,, " + aLegRANG.toString())
-
-        val countResult = analExercise().workCount(
-          squartLHIPy,
-          squartLKNEEy,
-          squartRHIPy,
-          squartRKNEEy,
-          aLegLANG,
-          aLegRANG,
-          squart_FLAG
-        )  // 분석함수
-
-        Log.d("countRes", countResult.toString())
-        if (squart_FLAG == 0 && countResult == 1) {
-          squart_FLAG = 1
-        } else if (squart_FLAG == 1 && countResult == 0){
-          squartCnt++;
-          Log.d("squartCnt", squartCnt.toString())
-          squart_FLAG = 0
-        }
-      }
-//      if (legRANG > 0){
-//        Log.d("angles2",  squartLHIPx.toString() +" "+squartLHIPy.toString() +" , " + squartLANKx + " "+squartLANKy +" /ang "+ legLANG.toString() + " // "
-//                + squartRHIPx + " " + squartRHIPy + " , " + squartRANKx + " " + squartRANKy + " /ang " + legRANG.toString())
-//      }
-
-
-//      Log.d("herere", squartLHIP.toString()+"/"+squartLKNEE.toString())
-//      if (squartLHIP != 0.0f && squartLKNEE != 0.0f) {
-//        val result = squartLHIP - squartLKNEE
-//        if ((result > 0) && squart_FLAG == 0) {
-//          Log.d("cal", result.toString())
-//          squart_FLAG = 1
-//          Log.d("result", "yes!");
-//        } else if ((result < 0) && squart_FLAG == 1) {
-//          squart_FLAG = 0
-//          Log.d("result2", squart_FLAG.toString()+" you did it");
-//        }
-//      }
     }
 
     for (line in bodyJoints) {
@@ -857,8 +763,94 @@ class PosenetActivity :
     }
   }
 
-  class analExercise {
-    fun workCount(squartLHIPy: Float, squartLKNEEy: Float, squartRHIPy: Float, squartRKNEEy: Float, aLegLANG: Double, aLegRANG: Double, squart_FLAG: Int): Int {
+  /** squartclass */
+  class SquartObj (
+    var squartLHIPx: Float,
+    var squartLHIPy: Float,
+    var squartRHIPx: Float,
+    var squartRHIPy: Float,
+    var squartLKNEEx: Float,
+    var squartLKNEEy: Float,
+    var squartRKNEEx: Float,
+    var squartRKNEEy: Float,
+    var squartLANKx: Float,
+    var squartLANKy: Float,
+    var squartRANKx: Float,
+    var squartRANKy: Float) {
+    var legLANG: Double = 0.0
+    var legRANG: Double = 0.0
+    var absLegVal: Double = 0.0
+    var aLegLANG: Double = 0.0
+    var aLegRANG: Double = 0.0
+    fun setAdjustedparts(keyPoint: KeyPoint, adjustedX: Float, adjustedY: Float){
+      when (keyPoint.bodyPart) {
+        BodyPart.LEFT_HIP -> {
+          squartLHIPx = adjustedX
+          squartLHIPy = adjustedY
+        }
+        BodyPart.RIGHT_HIP -> {
+          squartRHIPx = adjustedX
+          squartRHIPy = adjustedY
+        }
+        BodyPart.LEFT_KNEE -> {
+          squartLKNEEx = adjustedX
+          squartLKNEEy = adjustedY
+        }
+        BodyPart.RIGHT_KNEE -> {
+          squartRKNEEx = adjustedX
+          squartRKNEEy = adjustedY
+        }
+        BodyPart.LEFT_ANKLE -> {
+          squartLANKx = adjustedX
+          squartLANKy = adjustedY
+        }
+        BodyPart.RIGHT_ANKLE -> {
+          squartRANKx = adjustedX
+          squartRANKy = adjustedY
+        }
+        else -> {
+          // nothing for now
+        }
+      }
+    }
+    fun setLegAngle(){
+      if ((squartLHIPx * squartLHIPy * squartLKNEEx * squartLKNEEy * squartLANKx * squartLANKy) > 0){
+        legLANG = AnalExercise().calLegAngle(squartLHIPx, squartLHIPy, squartLKNEEx, squartLKNEEy, squartLANKx, squartLANKy)
+      }
+      if ((squartRHIPx * squartRHIPy * squartRKNEEx * squartRKNEEy * squartRANKx * squartRANKy) > 0){
+        legRANG = AnalExercise().calLegAngle(squartRHIPx, squartRHIPy, squartRKNEEx, squartRKNEEy, squartRANKx, squartRANKy)
+      }
+      absLegVal = Math.abs(legLANG)
+      aLegLANG = if (absLegVal>180) 360 - absLegVal else absLegVal
+      absLegVal = Math.abs(legRANG)
+      aLegRANG = if (absLegVal>180) 360 - absLegVal else absLegVal
+    }
+  }
+
+  class AnalExercise {
+//    /** 스쿼트 Count */
+//    var squartCnt: Int = 0
+//    /** 스쿼트 Flag */
+//    var squart_FLAG: Int = 0
+
+    fun calLegAngle(x1: Float, y1: Float, ox: Float, oy: Float, x2: Float, y2: Float): Double {
+//      val numerator: Float = ((x1-ox)*(y2-oy) + (y1-oy)*(x2-ox))
+//      val denominator: Float = ((x1-ox)*(x2-ox) - (y1-oy)*(y2-oy))
+//      val ratio: Float = numerator/denominator
+//      val angleRed: Float = atan(ratio)
+
+      val angleRed: Float = atan2(y1-oy, x1-ox) - atan2(y2-oy, x2-ox)
+
+//      val numerator: Float = x1*x2+y1*y2  // 내적
+//      val denominator: Double = Math.sqrt(Math.pow(x1.toDouble(), 2.0)+Math.pow(y1.toDouble(), 2.0)) * Math.sqrt(Math.pow(x2.toDouble(), 2.0)*Math.pow(y2.toDouble(), 2.0))  // 크기 곱
+//      val ratio: Double = numerator/denominator
+//      val angleRed: Double = acos(ratio)
+
+      Log.d("atan2-atan2", (atan2(y1-oy, x1-ox)*180 / Math.PI).toString() +" / " +(atan2(y2-oy, x2-ox)*180 / Math.PI).toString() + " // " + (angleRed*180 / Math.PI))
+      return angleRed*180 / Math.PI
+    }
+
+    fun squartRecog(squartLHIPy: Float, squartLKNEEy: Float, squartRHIPy: Float, squartRKNEEy: Float, aLegLANG: Double, aLegRANG: Double, squart_FLAG: Int): Int {
       var changingFLAG: Int = -1
       Log.d("herere", squartLHIPy.toString()+"/"+squartLKNEEy.toString()+" "+squart_FLAG.toString())
 
@@ -877,26 +869,44 @@ class PosenetActivity :
           Log.d("result2", squart_FLAG.toString()+" you did it");
           return changingFLAG
         }
-
       }
       return changingFLAG // -1
     }
 
-    fun calAngle(x1: Float, y1: Float, ox: Float, oy: Float, x2: Float, y2: Float): Double {
-//      val numerator: Float = ((x1-ox)*(y2-oy) + (y1-oy)*(x2-ox))
-//      val denominator: Float = ((x1-ox)*(x2-ox) - (y1-oy)*(y2-oy))
-//      val ratio: Float = numerator/denominator
-//      val angleRed: Float = atan(ratio)
+    fun squartCount(squartCntObj: SquartObj, squart_FLAG: Int): Int {
+      Log.d("partX", squartCntObj.squartLHIPy.toString() + " / " + squartCntObj.squartLHIPy.toString())
+      squartCntObj.setLegAngle()
+//      Log.d("posparts", (squartCntObj.squartLHIPx * squartCntObj.squartLHIPy * squartCntObj.squartLKNEEx * squartCntObj.squartLKNEEy * squartCntObj.squartLANKx * squartCntObj.squartLANKy).toString()+ "   "+ legLANG.toString() + " ,, " + legRANG.toString())
 
-      val angleRed: Float = atan2(y1-oy, x1-ox) - atan2(y2-oy, x2-ox)
+//      Log.d("pospartsNew", (squartLHIPx * squartLHIPy * squartLKNEEx * squartLKNEEy * squartLANKx * squartLANKy).toString()+ "   "+ aLegLANG.toString() + " ,, " + aLegRANG.toString())
 
-//      val numerator: Float = x1*x2+y1*y2  // 내적
-//      val denominator: Double = Math.sqrt(Math.pow(x1.toDouble(), 2.0)+Math.pow(y1.toDouble(), 2.0)) * Math.sqrt(Math.pow(x2.toDouble(), 2.0)*Math.pow(y2.toDouble(), 2.0))  // 크기 곱
-//      val ratio: Double = numerator/denominator
-//      val angleRed: Double = acos(ratio)
+      if (squartCntObj.aLegLANG > 0 && squartCntObj.aLegRANG > 0){
+//        Log.d("angles",  squartLHIPx.toString() +" "+squartLHIPy.toString() +" , " + squartLANKx + " "+squartLANKy +" /ang "+ aLegLANG.toString() + " // "
+//                + squartRHIPx + " " + squartRHIPy + " , " + squartRANKx + " " + squartRANKy + " /ang " + aLegRANG.toString())
+        Log.d("pospartsNew", (squartCntObj.squartLHIPx * squartCntObj.squartLHIPy * squartCntObj.squartLKNEEx * squartCntObj.squartLKNEEy * squartCntObj.squartLANKx * squartCntObj.squartLANKy).toString()+ "   "+ squartCntObj.aLegLANG.toString() + " ,, " + squartCntObj.aLegRANG.toString())
 
-      Log.d("atan2-atan2", (atan2(y1-oy, x1-ox)*180 / Math.PI).toString() +" / " +(atan2(y2-oy, x2-ox)*180 / Math.PI).toString() + " // " + (angleRed*180 / Math.PI))
-      return angleRed*180 / Math.PI
+        val countResult = squartRecog(
+          squartCntObj.squartLHIPy,
+          squartCntObj.squartLKNEEy,
+          squartCntObj.squartRHIPy,
+          squartCntObj.squartRKNEEy,
+          squartCntObj.aLegLANG,
+          squartCntObj.aLegRANG,
+          squart_FLAG
+        )  // 분석함수
+
+        Log.d("countRes", countResult.toString())
+        if (squart_FLAG == 0 && countResult == 1) {
+//          squart_FLAG = 1
+          return 1;
+        } else if (squart_FLAG == 1 && countResult == 0){
+//          squartCnt++;
+//          Log.d("squartCnt", squartCnt.toString())
+//          squart_FLAG = 0
+          return 0;
+        }
+      }
+      return -1; // default return
     }
   }
 
