@@ -297,7 +297,7 @@ class PosenetActivity :
     }
     // 파일 재생
     val mTestSoundId = mSoundPool!!.load(this.context!!, R.raw.test, 1)
-    // 리스너 (파일로딩 후 재생위함)
+    // 리스너 (파일로딩 후 재생 위함)
     mSoundPool!!.setOnLoadCompleteListener { soundPool, i, status ->
       mTestStreamId = mSoundPool!!.play(mTestSoundId, 0.1f, 0.1f, 1, -1, 1f)
     }
