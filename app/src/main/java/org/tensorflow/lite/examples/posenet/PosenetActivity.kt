@@ -39,16 +39,11 @@ import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
-import android.media.DeniedByServerException
-import android.media.Image
-import android.media.ImageReader
+import android.media.*
 import android.media.ImageReader.OnImageAvailableListener
 import android.net.Uri
+import android.os.*
 import android.widget.MediaController
-import android.os.Bundle
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.Process
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import android.util.Log
@@ -88,6 +83,10 @@ class PosenetActivity :
 
   /** videoView 세팅 */
   private var videoView: VideoView? = null
+
+  /** 음악재생 */
+  var mSoundPool: SoundPool? = null
+  var mTestStreamId: Int = 0
 
   /** MediaController 추가 */
   var mediaController: MediaController? = null
@@ -269,10 +268,12 @@ class PosenetActivity :
     videoView!!.setMediaController(mediaController)
     videoView!!.setVideoURI(videouri)
     videoView!!.start()
+
   }
 
   override fun onResume() {
     super.onResume()
+    mSoundPool!!.resume(mTestStreamId)
     startBackgroundThread()
   }
 
@@ -281,6 +282,25 @@ class PosenetActivity :
     openCamera()
     posenet = Posenet(this.context!!) // posenet 라이브러리의 클래스 사용
 
+    /** Sound 세팅 */
+    // 객체 생성
+    mSoundPool = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      val mAudioAttributes = AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_GAME)
+        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+        .build()
+      SoundPool.Builder()
+        .setAudioAttributes(mAudioAttributes)
+        .setMaxStreams(2).build()
+    } else {
+      SoundPool(2, AudioManager.STREAM_MUSIC, 0)
+    }
+    // 파일 재생
+    val mTestSoundId = mSoundPool!!.load(this.context!!, R.raw.test, 1)
+    // 리스너 (파일로딩 후 재생위함)
+    mSoundPool!!.setOnLoadCompleteListener { soundPool, i, status ->
+      mTestStreamId = mSoundPool!!.play(mTestSoundId, 0.1f, 0.1f, 1, -1, 1f)
+    }
   }
 
 //  override fun onConfigurationChanged(newConfig: Configuration) {
@@ -300,11 +320,18 @@ class PosenetActivity :
     closeCamera()
     stopBackgroundThread()
     super.onPause()
+    mSoundPool!!.pause(mTestStreamId)
+  }
+
+  override fun onStop() {
+    super.onStop()
+    mSoundPool!!.stop(mTestStreamId)
   }
 
   override fun onDestroy() {
     super.onDestroy()
     posenet.close()
+    mSoundPool!!.release()
   }
 
   private fun requestCameraPermission() {
