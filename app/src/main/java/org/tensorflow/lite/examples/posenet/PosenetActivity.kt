@@ -20,6 +20,7 @@ import android.Manifest
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
+import android.content.Context.LAYOUT_INFLATER_SERVICE
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
@@ -43,7 +44,6 @@ import android.media.*
 import android.media.ImageReader.OnImageAvailableListener
 import android.net.Uri
 import android.os.*
-import android.widget.MediaController
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import android.util.Log
@@ -55,9 +55,13 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import android.widget.VideoView
+import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
+import android.widget.*
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat.getSystemService
+import kotlinx.android.synthetic.main.tfe_pn_activity_posenet.*
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
@@ -87,6 +91,11 @@ class PosenetActivity :
   /** 음악재생 */
   var mSoundPool: SoundPool? = null
   var mTestStreamId: Int = 0
+
+  /** 애니메이션 */
+//  var animAppear: Animation? = AnimationUtils.loadAnimation(activity, R.anim.fade_in)
+//  var animDisappear: Animation? = AnimationUtils.loadAnimation(activity, R.anim.fade_out)
+//  var startAnimation: Animation? = AlphaAnimation(1.0f, 0.1f)
 
   /** MediaController 추가 */
   var mediaController: MediaController? = null
@@ -246,6 +255,7 @@ class PosenetActivity :
 
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     surfaceView = view.findViewById(R.id.surfaceView)
+    surfaceHolder = surfaceView!!.holder
     videoView = view.findViewById(R.id.videoView)
 //    PosenetActivity.init
 //    val rotation: Int ?= activity?.getWindowManager()?.getDefaultDisplay()?.getRotation()
@@ -258,17 +268,29 @@ class PosenetActivity :
 //    }
 //    val result : Int = (90 - degrees +360) % 360
 //    cameraDevice.setDisplayOrientation(result)
-
-    surfaceHolder = surfaceView!!.holder
+    // 이미지 붙이기
+    val startIv = ImageView(this.activity)
+    startIv.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    startIv.setImageResource(R.drawable.start_img)
+    val imgFrameLayout: FrameLayout = imgFrame
+    imgFrameLayout.addView(startIv)
+    if (startIv.visibility == View.INVISIBLE || startIv.visibility == View.GONE){
+      startIv.visibility = View.VISIBLE
+    }
+    // fade out 애니메이션
+    val startOutAnim = AnimationUtils.loadAnimation(this.activity, R.anim.fade_out)
+    imgFrameLayout.animation = startOutAnim
+    // fade out (3초) 후 이미지 사라지게
+    Handler().postDelayed({
+      startIv.visibility = View.GONE
+    }, 3000)
 
     mediaController = MediaController(this.activity)
     mediaController!!.setAnchorView(videoView)
     val videouri: Uri = Uri.parse("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4")
-
     videoView!!.setMediaController(mediaController)
     videoView!!.setVideoURI(videouri)
     videoView!!.start()
-
   }
 
   override fun onResume() {
