@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.tensorflow.lite.examples.posenet
+package org.tensorflow.lite.examples.posenettest
 
 import android.Manifest
 import android.app.AlertDialog
@@ -33,7 +33,7 @@ class ConfirmationDialog : DialogFragment() {
       .setPositiveButton(android.R.string.ok) { _, _ ->
         parentFragment!!.requestPermissions(
           arrayOf(Manifest.permission.CAMERA),
-          REQUEST_CAMERA_PERMISSION
+            REQUEST_CAMERA_PERMISSION
         )
       }
       .setNegativeButton(android.R.string.cancel) { _, _ ->

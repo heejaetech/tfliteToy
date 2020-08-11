@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.tensorflow.lite.examples.posenet
+package org.tensorflow.lite.examples.posenettest
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -45,7 +45,8 @@ class TestActivity : AppCompatActivity() {
     setContentView(R.layout.tfe_pn_activity_test)
 
     val sampleImageView = findViewById<ImageView>(R.id.image)
-    val drawedImage = ResourcesCompat.getDrawable(resources, R.drawable.image, null)
+    val drawedImage = ResourcesCompat.getDrawable(resources,
+      R.drawable.image, null)
     val imageBitmap = drawableToBitmap(drawedImage!!)
     sampleImageView.setImageBitmap(imageBitmap)
     val posenet = Posenet(this.applicationContext) // 라이브러리에 있는 Posenet 클래스 사용 (선언+생성자 사용 동시)

@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package org.tensorflow.lite.examples.posenet
+@file:JvmName("Constants")
 
-import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+package org.tensorflow.lite.examples.posenettest
 
-class CameraActivity : AppCompatActivity() {
+/** Request camera and external storage permission.   */
+const val REQUEST_CAMERA_PERMISSION = 1
 
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.tfe_pn_activity_camera)
-    savedInstanceState ?: supportFragmentManager.beginTransaction()
-      .replace(R.id.container, PosenetActivity())
-      .commit()
-  }
-}
+/** Model input shape for images.   */
+const val MODEL_WIDTH = 257
+const val MODEL_HEIGHT = 257

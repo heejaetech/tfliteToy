@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.tensorflow.lite.examples.posenet
+package org.tensorflow.lite.examples.posenettest
 
 import android.Manifest
 import android.app.AlertDialog
@@ -280,7 +280,9 @@ class PosenetActivity :
       startIv.visibility = View.VISIBLE
     }
     // fade out 애니메이션
-    val startOutAnim = AnimationUtils.loadAnimation(this.activity, R.anim.fade_out)
+    val startOutAnim = AnimationUtils.loadAnimation(this.activity,
+      R.anim.fade_out
+    )
     imgFrameLayout.animation = startOutAnim
     // fade out (3초) 후 이미지 사라지게
     Handler().postDelayed({
@@ -331,7 +333,8 @@ class PosenetActivity :
       SoundPool(2, AudioManager.STREAM_MUSIC, 0)
     }
     // 파일 재생
-    val mTestSoundId = mSoundPool!!.load(this.context!!, R.raw.test, 1)
+    val mTestSoundId = mSoundPool!!.load(this.context!!,
+      R.raw.test, 1)
     // 리스너 (파일로딩 후 재생 위함)
     mSoundPool!!.setOnLoadCompleteListener { soundPool, i, status ->
       mTestStreamId = mSoundPool!!.play(mTestSoundId, 0.1f, 0.1f, 1, -1, 1f)
@@ -371,9 +374,13 @@ class PosenetActivity :
 
   private fun requestCameraPermission() {
     if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-      ConfirmationDialog().show(childFragmentManager, FRAGMENT_DIALOG)
+      ConfirmationDialog().show(childFragmentManager,
+        FRAGMENT_DIALOG
+      )
     } else {
-      requestPermissions(arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
+      requestPermissions(arrayOf(Manifest.permission.CAMERA),
+        REQUEST_CAMERA_PERMISSION
+      )
     }
   }
 
@@ -384,8 +391,12 @@ class PosenetActivity :
   ) {
     if (requestCode == REQUEST_CAMERA_PERMISSION) {
       if (allPermissionsGranted(grantResults)) {
-        ErrorDialog.newInstance(getString(R.string.tfe_pn_request_permission))
-          .show(childFragmentManager, FRAGMENT_DIALOG)
+        ErrorDialog.newInstance(
+          getString(R.string.tfe_pn_request_permission)
+        )
+          .show(childFragmentManager,
+            FRAGMENT_DIALOG
+          )
       }
     } else {
       super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -458,8 +469,12 @@ class PosenetActivity :
     } catch (e: NullPointerException) {
       // Currently an NPE is thrown when the Camera2API is used but not supported on the
       // device this code runs.
-      ErrorDialog.newInstance(getString(R.string.tfe_pn_camera_error))
-        .show(childFragmentManager, FRAGMENT_DIALOG)
+      ErrorDialog.newInstance(
+        getString(R.string.tfe_pn_camera_error)
+      )
+        .show(childFragmentManager,
+          FRAGMENT_DIALOG
+        )
     }
   }
 
@@ -680,8 +695,11 @@ class PosenetActivity :
     val widthRatio = screenWidth.toFloat() / MODEL_WIDTH
     val heightRatio = screenHeight.toFloat() / MODEL_HEIGHT
 
-    val squartCntObj = SquartObj(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-      0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f)
+    val squartCntObj =
+      SquartObj(
+        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f
+      )
     // Draw key points over the image.
     for (keyPoint in person.keyPoints) {
       if (keyPoint.score > minConfidence) {
@@ -696,7 +714,8 @@ class PosenetActivity :
       // 스쿼트
 //      count = AnalExercise().squartCnt
 //      countFlag = AnalExercise().squart_FLAG
-      val cnt = AnalExercise().squartCount(squartCntObj, squart_FLAG)
+      val cnt = AnalExercise()
+        .squartCount(squartCntObj, squart_FLAG)
       if (cnt == 1){
         squart_FLAG = 1
       } else if (cnt == 0){
@@ -759,7 +778,9 @@ class PosenetActivity :
     val croppedBitmap = cropBitmap(bitmap)
 
     // Created scaled version of bitmap for model input.
-    val scaledBitmap = Bitmap.createScaledBitmap(croppedBitmap, MODEL_WIDTH, MODEL_HEIGHT, true)
+    val scaledBitmap = Bitmap.createScaledBitmap(croppedBitmap,
+      MODEL_WIDTH,
+      MODEL_HEIGHT, true)
 
     // Perform inference.
     val person = posenet.estimateSinglePose(scaledBitmap)
@@ -889,10 +910,12 @@ class PosenetActivity :
     }
     fun setLegAngle(){
       if ((squartLHIPx * squartLHIPy * squartLKNEEx * squartLKNEEy * squartLANKx * squartLANKy) > 0){
-        legLANG = AnalExercise().calLegAngle(squartLHIPx, squartLHIPy, squartLKNEEx, squartLKNEEy, squartLANKx, squartLANKy)
+        legLANG = AnalExercise()
+          .calLegAngle(squartLHIPx, squartLHIPy, squartLKNEEx, squartLKNEEy, squartLANKx, squartLANKy)
       }
       if ((squartRHIPx * squartRHIPy * squartRKNEEx * squartRKNEEy * squartRANKx * squartRANKy) > 0){
-        legRANG = AnalExercise().calLegAngle(squartRHIPx, squartRHIPy, squartRKNEEx, squartRKNEEy, squartRANKx, squartRANKy)
+        legRANG = AnalExercise()
+          .calLegAngle(squartRHIPx, squartRHIPy, squartRKNEEx, squartRKNEEy, squartRANKx, squartRANKy)
       }
       absLegVal = Math.abs(legLANG)
       aLegLANG = if (absLegVal>180) 360 - absLegVal else absLegVal
@@ -1001,7 +1024,8 @@ class PosenetActivity :
       private val ARG_MESSAGE = "message"
 
       @JvmStatic
-      fun newInstance(message: String): ErrorDialog = ErrorDialog().apply {
+      fun newInstance(message: String): ErrorDialog = ErrorDialog()
+        .apply {
         arguments = Bundle().apply { putString(ARG_MESSAGE, message) }
       }
     }
