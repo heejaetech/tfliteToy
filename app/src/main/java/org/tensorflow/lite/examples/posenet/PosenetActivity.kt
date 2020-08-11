@@ -40,6 +40,7 @@ import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
+import android.hardware.camera2.params.StreamConfigurationMap
 import android.media.*
 import android.media.ImageReader.OnImageAvailableListener
 import android.net.Uri
@@ -127,10 +128,10 @@ class PosenetActivity :
   private var paint2 = Paint()
 
   /** A shape for extracting frame data.   */
-  private val PREVIEW_WIDTH = 640
-//  private val PREVIEW_WIDTH = 800
-  private val PREVIEW_HEIGHT = 480
-//  private val PREVIEW_HEIGHT = 600
+//  private var PREVIEW_WIDTH = 1280
+//  private var PREVIEW_HEIGHT = 720
+  private var PREVIEW_WIDTH = 640
+  private var PREVIEW_HEIGHT = 480
 
   /** An object for the Posenet library.    */
   private lateinit var posenet: Posenet  // posenet 라이브러리의 클래스 사용
@@ -244,7 +245,8 @@ class PosenetActivity :
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    activity?.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
+    activity?.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+//    activity?.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
   }
 
   override fun onCreateView(
@@ -295,8 +297,19 @@ class PosenetActivity :
 
   override fun onResume() {
     super.onResume()
-    mSoundPool!!.resume(mTestStreamId)
     startBackgroundThread()
+    mSoundPool!!.resume(mTestStreamId)
+
+    // 추가
+    // When the screen is turned off and turned back on, the SurfaceTexture is already
+    // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
+    // a camera and start preview from here (otherwise, we wait until the surface is ready in
+    // the SurfaceTextureListener).
+//    if (textureView.isAvailable) {
+//      openCamera(textureView.width, textureView.height)
+//    } else {
+//      textureView.surfaceTextureListener = surfaceTextureListener
+//    }
   }
 
   override fun onStart() {
@@ -404,20 +417,31 @@ class PosenetActivity :
           continue
         }
 
-        previewSize = Size(PREVIEW_WIDTH, PREVIEW_HEIGHT)
+        val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) as StreamConfigurationMap
+        var largestPreviewSize: Size = map!!.getOutputSizes(ImageFormat.JPEG)[0]
+        previewWidth = largestPreviewSize.width
+        previewHeight = largestPreviewSize.height
+//        Log.d("w,h", "$PREVIEW_WIDTH $PREVIEW_HEIGHT")
 
+//        setAspectRatioTextureView(largestPreviewSize.height, largestPreviewSize.width)
+
+        previewSize = Size(PREVIEW_WIDTH, PREVIEW_HEIGHT)
+//        previewSize = Size(previewWidth, previewHeight)
+
+        previewWidth = previewSize!!.width
+        previewHeight = previewSize!!.height
+
+        Log.d("w,h", "$PREVIEW_WIDTH $PREVIEW_HEIGHT")
+        Log.d("newwh", "$previewWidth $previewHeight")
         imageReader = ImageReader.newInstance(
           PREVIEW_WIDTH, PREVIEW_HEIGHT,
-          ImageFormat.YUV_420_888, /*maxImages*/ 2
+          ImageFormat.JPEG, /*maxImages*/ 1
         )
 
         sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
 
-        previewHeight = previewSize!!.height
-        previewWidth = previewSize!!.width
-
         // Initialize the storage bitmaps once when the resolution is known.
-        rgbBytes = IntArray(previewWidth * previewHeight)
+        rgbBytes = IntArray(PREVIEW_WIDTH * PREVIEW_HEIGHT)
 
         // Check if the flash is supported.
         flashSupported =
@@ -537,7 +561,7 @@ class PosenetActivity :
 
       val image = imageReader.acquireLatestImage() ?: return
       fillBytes(image.planes, yuvBytes)
-
+      Log.d("imyuv", yuvBytes[0].toString())
       ImageUtils.convertYUV420ToARGB8888(
         yuvBytes[0]!!,
         yuvBytes[1]!!,
@@ -558,9 +582,10 @@ class PosenetActivity :
 
       // Create rotated version for portrait display -> landscape로 변경
       val rotateMatrix = Matrix()
-      rotateMatrix.postRotate(ORIENTATIONS.get(Surface.ROTATION_90).toFloat()) // landscape
+//      rotateMatrix.postRotate(ORIENTATIONS.get(Surface.ROTATION_90).toFloat()) // landscape
 //      rotateMatrix.setScale(-1.0f, 1.0f)  // (전면) 좌우반전
-//      rotateMatrix.postRotate(90.0f)
+
+      rotateMatrix.postRotate(90.0f)
 
       val rotatedBitmap = Bitmap.createBitmap(
         imageBitmap, 0, 0, previewWidth, previewHeight,
