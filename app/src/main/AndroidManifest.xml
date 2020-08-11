@@ -24,13 +24,23 @@
         android:label="@string/tfe_pn_app_name"
         android:exported="true">
     </activity>
+    <activity
+        android:name=".CameraActivity"
+        android:label="@string/tfe_pn_app_name"
+        android:exported="true">
+    </activity>
 
     <!-- 시작 액티비티 -->
 <!--    <activity android:name=".CameraActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboard|keyboardHidden">-->
-    <activity android:name=".CameraActivity" android:exported="true">
+    <activity android:name=".MainActivity" android:exported="true">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
+
         <category android:name="android.intent.category.LAUNCHER"/>
+<!--        <action android:name="android.intent.action.VIEW"/>-->
+<!--        <category android:name="android.intent.category.DEFAULT"/>-->
+<!--          <category android:name="android.intent.category.BROWSABLE"/>-->
+<!--          <data android:scheme="https" android:host="wedatalab.com"/>-->
       </intent-filter>
     </activity>
 
