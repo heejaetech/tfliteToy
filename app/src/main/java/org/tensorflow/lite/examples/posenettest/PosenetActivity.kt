@@ -294,7 +294,10 @@ class PosenetActivity :
     val videouri: Uri = Uri.parse("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4")
     videoView!!.setMediaController(mediaController)
     videoView!!.setVideoURI(videouri)
-    videoView!!.start()
+    Handler().postDelayed({
+      videoView!!.start()
+      
+    }, 3000)
   }
 
   override fun onResume() {
