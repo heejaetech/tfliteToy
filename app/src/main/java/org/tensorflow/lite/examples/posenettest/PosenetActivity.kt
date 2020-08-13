@@ -20,58 +20,34 @@ import android.Manifest
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
-import android.content.Context.LAYOUT_INFLATER_SERVICE
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.ImageFormat
-import android.graphics.Matrix
-import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.Rect
-import android.hardware.camera2.CameraAccessException
-import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CameraDevice
-import android.hardware.camera2.CameraManager
-import android.hardware.camera2.CaptureRequest
-import android.hardware.camera2.CaptureResult
-import android.hardware.camera2.TotalCaptureResult
+import android.graphics.*
+import android.hardware.camera2.*
 import android.hardware.camera2.params.StreamConfigurationMap
 import android.media.*
 import android.media.ImageReader.OnImageAvailableListener
 import android.net.Uri
 import android.os.*
-import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.Fragment
+import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
 import android.util.SparseIntArray
-import android.view.LayoutInflater
-import android.view.Surface
-import android.view.SurfaceHolder
-import android.view.SurfaceView
-import android.view.View
-import android.view.ViewGroup
-import android.view.animation.AlphaAnimation
-import android.view.animation.Animation
+import android.view.*
 import android.view.animation.AnimationUtils
 import android.widget.*
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat.getSystemService
+import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.Fragment
 import kotlinx.android.synthetic.main.tfe_pn_activity_posenet.*
-import java.util.concurrent.Semaphore
-import java.util.concurrent.TimeUnit
-import kotlin.math.abs
-import org.tensorflow.lite.examples.posenet.lib.BodyPart  // posenet 라이브러리의 클래스 사용
+import org.tensorflow.lite.examples.posenet.lib.BodyPart
 import org.tensorflow.lite.examples.posenet.lib.KeyPoint
 import org.tensorflow.lite.examples.posenet.lib.Person
 import org.tensorflow.lite.examples.posenet.lib.Posenet
-import kotlin.math.acos
-import kotlin.math.atan
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 import kotlin.math.atan2
 
 class PosenetActivity :
@@ -165,6 +141,7 @@ class PosenetActivity :
 
   /** A ByteArray to save image data in YUV format  */
   private var yuvBytes = arrayOfNulls<ByteArray>(3)
+//  private var bytes = arrayOfNulls<ByteArray>(3)
 
   /** An additional thread for running tasks that shouldn't block the UI.   */
   private var backgroundThread: HandlerThread? = null
@@ -259,6 +236,7 @@ class PosenetActivity :
     surfaceView = view.findViewById(R.id.surfaceView)
     surfaceHolder = surfaceView!!.holder
     videoView = view.findViewById(R.id.videoView)
+
 //    PosenetActivity.init
 //    val rotation: Int ?= activity?.getWindowManager()?.getDefaultDisplay()?.getRotation()
 //    var degrees : Int = 0;
@@ -270,6 +248,7 @@ class PosenetActivity :
 //    }
 //    val result : Int = (90 - degrees +360) % 360
 //    cameraDevice.setDisplayOrientation(result)
+
     // 이미지 붙이기
     val startIv = ImageView(this.activity)
     startIv.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -285,9 +264,9 @@ class PosenetActivity :
     )
     imgFrameLayout.animation = startOutAnim
     // fade out (3초) 후 이미지 사라지게
-    Handler().postDelayed({
-      startIv.visibility = View.GONE
-    }, 3000)
+//    Handler().postDelayed({
+//      startIv.visibility = View.GONE
+//    }, 3000)
 
     mediaController = MediaController(this.activity)
     mediaController!!.setAnchorView(videoView)
@@ -295,8 +274,8 @@ class PosenetActivity :
     videoView!!.setMediaController(mediaController)
     videoView!!.setVideoURI(videouri)
     Handler().postDelayed({
+      startIv.visibility = View.GONE
       videoView!!.start()
-      
     }, 3000)
   }
 
@@ -442,14 +421,14 @@ class PosenetActivity :
         previewSize = Size(PREVIEW_WIDTH, PREVIEW_HEIGHT)
 //        previewSize = Size(previewWidth, previewHeight)
 
-        previewWidth = previewSize!!.width
-        previewHeight = previewSize!!.height
-
-        Log.d("w,h", "$PREVIEW_WIDTH $PREVIEW_HEIGHT")
+//        previewWidth = previewSize!!.width
+//        previewHeight = previewSize!!.height
+//        Log.d("w,h", "$PREVIEW_WIDTH $PREVIEW_HEIGHT")
         Log.d("newwh", "$previewWidth $previewHeight")
+
         imageReader = ImageReader.newInstance(
           PREVIEW_WIDTH, PREVIEW_HEIGHT,
-          ImageFormat.JPEG, /*maxImages*/ 1
+          ImageFormat.JPEG, /*maxImages*/ 2
         )
 
         sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
@@ -567,25 +546,37 @@ class PosenetActivity :
       }
       buffer.get(yuvBytes[i]!!)
     }
+//    for (i in planes.indices) {
+//      val buffer = planes[i].buffer
+//      if (bytes[i] == null) {
+//        bytes[i] = ByteArray(buffer.capacity())
+//      }
+//      buffer.get(bytes[i]!!)
+//    }
   }
 
   /** A [OnImageAvailableListener] to receive frames as they are available.  */
   private var imageAvailableListener = object : OnImageAvailableListener {
     override fun onImageAvailable(imageReader: ImageReader) {
       // We need wait until we have some size from onPreviewSizeChosen
-      if (previewWidth == 0 || previewHeight == 0) {
+//      if (previewWidth == 0 || previewHeight == 0) {
+//      if (previewSize!!.width == 0 || previewSize!!.height == 0) {
+      if (previewSize == null) {
         return
       }
 
       val image = imageReader.acquireLatestImage() ?: return
+//      fillBytes(image.planes, bytes)
       fillBytes(image.planes, yuvBytes)
-      Log.d("imyuv", yuvBytes[0].toString())
+//      Log.d("imyuv", yuvBytes[0].toString())
       ImageUtils.convertYUV420ToARGB8888(
         yuvBytes[0]!!,
         yuvBytes[1]!!,
         yuvBytes[2]!!,
-        previewWidth,
-        previewHeight,
+//        previewSize.width,
+        previewSize!!.width,
+//        previewHeight,
+        previewSize!!.height,
         /*yRowStride=*/ image.planes[0].rowStride,
         /*uvRowStride=*/ image.planes[1].rowStride,
         /*uvPixelStride=*/ image.planes[1].pixelStride,
@@ -593,10 +584,11 @@ class PosenetActivity :
       )
 
       // Create bitmap from int array
-      val imageBitmap = Bitmap.createBitmap(
-        rgbBytes, previewWidth, previewHeight,
-        Bitmap.Config.ARGB_8888
-      )
+//      val imageBitmap = Bitmap.createBitmap(
+//        rgbBytes, previewWidth, previewHeight,
+//        Bitmap.Config.ARGB_8888
+//      )
+      val imageBitmap = BitmapFactory.decodeByteArray(yuvBytes[0], 0, yuvBytes.size)
 
       // Create rotated version for portrait display -> landscape로 변경
       val rotateMatrix = Matrix()
@@ -606,7 +598,7 @@ class PosenetActivity :
       rotateMatrix.postRotate(90.0f)
 
       val rotatedBitmap = Bitmap.createBitmap(
-        imageBitmap, 0, 0, previewWidth, previewHeight,
+        imageBitmap, 0, 0, previewSize!!.width, previewSize!!.height,
         rotateMatrix, true
       )
       image.close()
@@ -785,12 +777,14 @@ class PosenetActivity :
       MODEL_WIDTH,
       MODEL_HEIGHT, true)
 
+    // Posenet Estimation 포즈넷 인식 사용
     // Perform inference.
     val person = posenet.estimateSinglePose(scaledBitmap)
-    val canvas: Canvas = surfaceHolder!!.lockCanvas()
-    draw(canvas, person, scaledBitmap)
+//    val canvas: Canvas = surfaceHolder!!.lockCanvas()
+//    draw(canvas, person, scaledBitmap)
   }
 
+  // 카메라 프리뷰 만드는 곳
   /**
    * Creates a new [CameraCaptureSession] for camera preview.
    */
@@ -798,7 +792,8 @@ class PosenetActivity :
     try {
       // We capture images from preview in YUV format.
       imageReader = ImageReader.newInstance(
-        previewSize!!.width, previewSize!!.height, ImageFormat.YUV_420_888, 2
+        previewSize!!.width, previewSize!!.height, ImageFormat.JPEG, 2
+//        previewSize!!.width, previewSize!!.height, ImageFormat.YUV_420_888, 2
       )
       imageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
 
@@ -809,11 +804,11 @@ class PosenetActivity :
       previewRequestBuilder = cameraDevice!!.createCaptureRequest(
         CameraDevice.TEMPLATE_PREVIEW
       )
-      previewRequestBuilder!!.addTarget(recordingSurface)
+      previewRequestBuilder!!.addTarget(surfaceHolder!!.surface)    // 타켓을 surfaceholder의 surface로 바꿈. (yuv-비트맵이미지? -> 카메라 프리뷰)
 
       // Here, we create a CameraCaptureSession for camera preview.
       cameraDevice!!.createCaptureSession(
-        listOf(recordingSurface),
+        listOf(surfaceHolder!!.surface, recordingSurface),    // 리스트에 surfaceholder의 surface를 추가.
         object : CameraCaptureSession.StateCallback() {
           override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
             // The camera is already closed
