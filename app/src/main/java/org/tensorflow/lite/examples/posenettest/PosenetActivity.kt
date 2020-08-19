@@ -37,6 +37,8 @@ import android.util.SparseIntArray
 import android.view.*
 import android.view.animation.AnimationUtils
 import android.widget.*
+import androidx.constraintlayout.solver.LinearSystem.getMetrics
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
@@ -49,6 +51,7 @@ import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlin.math.atan2
+import androidx.core.view.marginTop as marginTop
 
 class PosenetActivity :
   Fragment(),
@@ -170,6 +173,9 @@ class PosenetActivity :
   /** Abstract interface to someone holding a display surface.    */
   private var surfaceHolder: SurfaceHolder? = null
 
+  private var mWidth:Int = 0
+  private var mHeight: Int = 0
+
   /** [CameraDevice.StateCallback] is called when [CameraDevice] changes its state.   */
   private val stateCallback = object : CameraDevice.StateCallback() {
 
@@ -224,6 +230,13 @@ class PosenetActivity :
     super.onCreate(savedInstanceState)
     activity?.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
 //    activity?.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
+
+    with(DisplayMetrics()){
+      activity!!.windowManager.defaultDisplay.getMetrics(this)
+      mWidth = widthPixels
+      mHeight = heightPixels
+    }
+    Log.d("mwh", "$mWidth, $mHeight")
   }
 
   override fun onCreateView(
@@ -235,6 +248,7 @@ class PosenetActivity :
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     surfaceView = view.findViewById(R.id.surfaceView)
     surfaceHolder = surfaceView!!.holder
+    Log.d("sssssss", "start")
     videoView = view.findViewById(R.id.videoView)
 
 //    PosenetActivity.init
@@ -411,19 +425,21 @@ class PosenetActivity :
         }
 
         val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) as StreamConfigurationMap
+        // 기기가 지원하는 가장 큰 해상도의 크기 사용. 프리뷰에 활용
         var largestPreviewSize: Size = map!!.getOutputSizes(ImageFormat.JPEG)[0]
         previewWidth = largestPreviewSize.width
         previewHeight = largestPreviewSize.height
 //        Log.d("w,h", "$PREVIEW_WIDTH $PREVIEW_HEIGHT")
 
-//        setAspectRatioTextureView(largestPreviewSize.height, largestPreviewSize.width)
+        setAspectRatioTextureView(largestPreviewSize.height, largestPreviewSize.width)
 
-        previewSize = Size(PREVIEW_WIDTH, PREVIEW_HEIGHT)
+        previewSize = Size(PREVIEW_WIDTH, PREVIEW_HEIGHT) // 디폴트로 설정한 이미지 프레임 크기  // 프리뷰 크기와 다름 유의 (파생문제점 확인 필요 - 보이는 범위와 분석되는 화면범위 차이?)
 //        previewSize = Size(previewWidth, previewHeight)
 
 //        previewWidth = previewSize!!.width
 //        previewHeight = previewSize!!.height
 //        Log.d("w,h", "$PREVIEW_WIDTH $PREVIEW_HEIGHT")
+        Log.d("largewh", "$largestPreviewSize")
         Log.d("newwh", "$previewWidth $previewHeight")
 
         imageReader = ImageReader.newInstance(
@@ -564,7 +580,7 @@ class PosenetActivity :
       if (previewSize == null) {
         return
       }
-
+      Log.d("imageListener", "iii")
       val image = imageReader.acquireLatestImage() ?: return
 //      fillBytes(image.planes, bytes)
       fillBytes(image.planes, yuvBytes)
@@ -584,18 +600,17 @@ class PosenetActivity :
       )
 
       // Create bitmap from int array
-//      val imageBitmap = Bitmap.createBitmap(
-//        rgbBytes, previewWidth, previewHeight,
-//        Bitmap.Config.ARGB_8888
-//      )
-      val imageBitmap = BitmapFactory.decodeByteArray(yuvBytes[0], 0, yuvBytes.size)
+      val imageBitmap = Bitmap.createBitmap(
+        rgbBytes, previewSize!!.width, previewSize!!.height,
+        Bitmap.Config.ARGB_8888
+      )
+//      val imageBitmap = BitmapFactory.decodeByteArray(yuvBytes[0], 0, yuvBytes.size)
 
       // Create rotated version for portrait display -> landscape로 변경
       val rotateMatrix = Matrix()
 //      rotateMatrix.postRotate(ORIENTATIONS.get(Surface.ROTATION_90).toFloat()) // landscape
 //      rotateMatrix.setScale(-1.0f, 1.0f)  // (전면) 좌우반전
-
-      rotateMatrix.postRotate(90.0f)
+      rotateMatrix.postRotate(90.0f) // 회전
 
       val rotatedBitmap = Bitmap.createBitmap(
         imageBitmap, 0, 0, previewSize!!.width, previewSize!!.height,
@@ -653,6 +668,76 @@ class PosenetActivity :
     paint2.color = Color.GREEN
     paint2.textSize = 120.0f
     paint2.strokeWidth = 10.0f
+  }
+
+  private fun moveCount(canvas: Canvas, person: Person){
+    Log.d("moveCount", "he")
+    val screenWidth: Int
+    val screenHeight: Int
+    val left: Int
+    val right: Int
+    val top: Int
+    val bottom: Int
+    if (canvas.height > canvas.width) {
+      screenWidth = canvas.width
+      screenHeight = canvas.width
+      left = 0
+      top = (canvas.height - canvas.width) / 2
+    } else {
+      screenWidth = canvas.height
+      screenHeight = canvas.height
+      left = (canvas.width - canvas.height) / 2
+      top = 0
+    }
+//    right = left + screenWidth
+//    bottom = top + screenHeight
+
+    val widthRatio = screenWidth.toFloat() / MODEL_WIDTH
+    val heightRatio = screenHeight.toFloat() / MODEL_HEIGHT
+
+    val squartCntObj =
+      SquartObj(
+        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f
+      )
+    // Draw key points over the image.
+    for (keyPoint in person.keyPoints) {
+      if (keyPoint.score > minConfidence) {
+        val position = keyPoint.position
+        val adjustedX: Float = position.x.toFloat() * widthRatio + left
+        val adjustedY: Float = position.y.toFloat() * heightRatio + top
+//        Log.d("partXXX", position.x.toString() + ", " + adjustedY.toString() + " / " + keyPoint.bodyPart.toString())
+        squartCntObj.setAdjustedparts(keyPoint, adjustedX, adjustedY) // 좌표 세팅 for 스쿼트
+//        canvas.drawCircle(adjustedX, adjustedY, circleRadius, paint)
+      }
+      // 스쿼트
+//      count = AnalExercise().squartCnt
+//      countFlag = AnalExercise().squart_FLAG
+      val cnt = AnalExercise()
+        .squartCount(squartCntObj, squart_FLAG)
+      if (cnt == 1){
+        squart_FLAG = 1
+      } else if (cnt == 0){
+        squartCnt++
+        squart_FLAG = 0
+      }
+    }
+    Log.d("squart_count", "$squartCnt");
+//    for (line in bodyJoints) {
+//      if (
+//        (person.keyPoints[line.first.ordinal].score > minConfidence) and
+//        (person.keyPoints[line.second.ordinal].score > minConfidence)
+//      ) {
+//        Log.d("person", person.keyPoints[line.first.ordinal].position.x.toFloat().toString())
+//        canvas.drawLine(
+//          person.keyPoints[line.first.ordinal].position.x.toFloat() * widthRatio + left,
+//          person.keyPoints[line.first.ordinal].position.y.toFloat() * heightRatio + top,
+//          person.keyPoints[line.second.ordinal].position.x.toFloat() * widthRatio + left,
+//          person.keyPoints[line.second.ordinal].position.y.toFloat() * heightRatio + top,
+//          paint2
+//        )
+//      }
+//    }
   }
 
   /** Draw bitmap on Canvas.   */
@@ -769,6 +854,7 @@ class PosenetActivity :
 
   /** Process image using Posenet library.   */
   private fun processImage(bitmap: Bitmap) {
+    Log.d("ProcessImage", "p")
     // Crop bitmap.
     val croppedBitmap = cropBitmap(bitmap)
 
@@ -782,6 +868,8 @@ class PosenetActivity :
     val person = posenet.estimateSinglePose(scaledBitmap)
 //    val canvas: Canvas = surfaceHolder!!.lockCanvas()
 //    draw(canvas, person, scaledBitmap)
+    val canvas = Canvas(bitmap)
+    moveCount(canvas, person)
   }
 
   // 카메라 프리뷰 만드는 곳
@@ -790,13 +878,15 @@ class PosenetActivity :
    */
   private fun createCameraPreviewSession() {
     try {
+      Log.d("pre00000", "000");
       // We capture images from preview in YUV format.
       imageReader = ImageReader.newInstance(
-        previewSize!!.width, previewSize!!.height, ImageFormat.JPEG, 2
-//        previewSize!!.width, previewSize!!.height, ImageFormat.YUV_420_888, 2
+//        previewSize!!.width, previewSize!!.height, ImageFormat.JPEG, 2
+        previewSize!!.width, previewSize!!.height, ImageFormat.YUV_420_888, 2
       )
+      Log.d("pre1111111", "111")
       imageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
-
+      Log.d("post22222222", "222")
       // This is the surface we need to record images for processing.
       val recordingSurface = imageReader!!.surface
 
@@ -804,7 +894,9 @@ class PosenetActivity :
       previewRequestBuilder = cameraDevice!!.createCaptureRequest(
         CameraDevice.TEMPLATE_PREVIEW
       )
-      previewRequestBuilder!!.addTarget(surfaceHolder!!.surface)    // 타켓을 surfaceholder의 surface로 바꿈. (yuv-비트맵이미지? -> 카메라 프리뷰)
+      previewRequestBuilder!!.addTarget(surfaceHolder!!.surface)  // 타겟 1개 이상 필수. surfaceholder의 surface -> 카메라 프리뷰
+      previewRequestBuilder!!.addTarget(recordingSurface) // 타겟에 추가 - yuv-비트맵 이미지
+      // => imageReader에 setOnImageAvailableListener 설정한 대로, 화면 프레임이 바뀌어 available 할 때마다 imageAvailableListener(yuv포맷 이미지 핸들링) 실행
 
       // Here, we create a CameraCaptureSession for camera preview.
       cameraDevice!!.createCaptureSession(
@@ -854,6 +946,31 @@ class PosenetActivity :
         CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH
       )
     }
+  }
+
+  private fun setAspectRatioTextureView(ResolutionWidth: Int, ResolutionHeight: Int) {
+    if (ResolutionWidth > ResolutionHeight) {
+      val newWidth = mWidth
+      val newHeight = mWidth * ResolutionWidth / ResolutionHeight
+      Log.d("newSize", "TextureView Width : $newWidth TextureView Height : $newHeight")
+      updateTextureViewSize(newWidth, newHeight)
+    } else {
+      val newWidth = mWidth
+      val newHeight = mWidth * ResolutionHeight / ResolutionWidth
+      Log.d("newSize", "TextureView Width : $newWidth TextureView Height : $newHeight")
+      updateTextureViewSize(newWidth, newHeight)
+    }
+
+  }
+
+  private fun updateTextureViewSize(viewWidth: Int, viewHeight: Int) {
+    Log.d("ViewSize", "TextureView Width : $viewWidth TextureView Height : $viewHeight")
+
+
+    surfaceView!!.layoutParams = ConstraintLayout.LayoutParams(viewWidth, viewHeight)
+    var lp : ViewGroup.MarginLayoutParams = surfaceView!!.layoutParams as ViewGroup.MarginLayoutParams
+    lp.topMargin = 120
+//    lp.setMargins(120, 0, 0, 0) //not working
   }
 
   /** squartclass */
@@ -1048,4 +1165,8 @@ class PosenetActivity :
      */
     private const val TAG = "PosenetActivity"
   }
+}
+
+private fun ViewGroup.LayoutParams.setMargins(i: Int, i1: Int, i2: Int, i3: Int) {
+
 }
